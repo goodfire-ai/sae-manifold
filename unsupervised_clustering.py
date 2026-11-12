@@ -463,12 +463,15 @@ def cluster_spectral(matrix, n_clusters=None, max_k=20, threshold=None,
         print("  Too few active features for spectral clustering")
         return {}, 0.0
     A = M[np.ix_(active, active)]
+    # silhouette_score(metric='precomputed') expects distances, A is an affinity.
+    D = A.max() - A
+    np.fill_diagonal(D, 0)
 
     if n_clusters is not None:
         labels = SpectralClustering(
             n_clusters, affinity='precomputed', random_state=42
         ).fit_predict(A)
-        sil = silhouette_score(A, labels, metric='precomputed') \
+        sil = silhouette_score(D, labels, metric='precomputed') \
             if len(set(labels)) > 1 else 0
     else:
         best = (None, 2, -1.0)
@@ -476,7 +479,7 @@ def cluster_spectral(matrix, n_clusters=None, max_k=20, threshold=None,
             labels = SpectralClustering(
                 k, affinity='precomputed', random_state=42
             ).fit_predict(A)
-            s = silhouette_score(A, labels, metric='precomputed') \
+            s = silhouette_score(D, labels, metric='precomputed') \
                 if len(set(labels)) > 1 else 0
             if s > best[2]:
                 best = (labels, k, s)
